@@ -1,4 +1,4 @@
-export type EventType = "click" | "hover" | "impression";
+export type EventType = "click" | "hover" | "impression" | "visible";
 
 export type GlobalState = {
     csrfToken: string;
@@ -8,4 +8,5 @@ export type GlobalState = {
     mouseoverListener: EventListener | null;
     inertiaStartListener: EventListener | null;
     beforeUnloadListener: EventListener | null;
+    intersectionObserver: IntersectionObserver | null;
 };

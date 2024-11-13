@@ -1,13 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.window.__pan = exports.window.__pan || {
-    csrfToken: "%_PAN_CSRF_TOKEN_%",
-    routePrefix: "%_PAN_ROUTE_PREFIX_%",
-    observer: null,
-    clickListener: null,
-    mouseoverListener: null,
-    inertiaStartListener: null,
-};
+exports.window.__pan =
+    exports.window.__pan ||
+        {
+            csrfToken: "%_PAN_CSRF_TOKEN_%",
+            routePrefix: "%_PAN_ROUTE_PREFIX_%",
+            observer: null,
+            clickListener: null,
+            mouseoverListener: null,
+            inertiaStartListener: null,
+            intersectionObserver: null,
+        };
 if (exports.window.__pan.observer) {
     exports.window.__pan.observer.disconnect();
     exports.window.__pan.observer = null;
@@ -17,22 +20,16 @@ if (exports.window.__pan.clickListener) {
     exports.window.__pan.clickListener = null;
 }
 if (exports.window.__pan.mouseoverListener) {
-    document.removeEventListener(
-        "mouseover",
-        exports.window.__pan.mouseoverListener
-    );
+    document.removeEventListener("mouseover", exports.window.__pan.mouseoverListener);
     exports.window.__pan.mouseoverListener = null;
 }
 if (exports.window.__pan.inertiaStartListener) {
-    document.removeEventListener(
-        "inertia:start",
-        exports.window.__pan.inertiaStartListener
-    );
+    document.removeEventListener("inertia:start", exports.window.__pan.inertiaStartListener);
     exports.window.__pan.inertiaStartListener = null;
 }
 (function () {
-    var domObserver = function (callback) {
-        var observer = new MutationObserver(callback);
+    const domObserver = (callback) => {
+        const observer = new MutationObserver(callback);
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -40,44 +37,42 @@ if (exports.window.__pan.inertiaStartListener) {
         });
         exports.window.__pan.observer = observer;
     };
-    var queue = [];
-    var queueTimeout = null;
-    var impressed = [];
-    var hovered = [];
-    var clicked = [];
-    var commit = function () {
+    const intersectionObserver = (callback) => {
+        exports.window.__pan.intersectionObserver = new IntersectionObserver(callback);
+    };
+    let queue = [];
+    let queueTimeout = null;
+    let impressed = [];
+    let hovered = [];
+    let clicked = [];
+    let visible = [];
+    const commit = () => {
         if (queue.length === 0) {
             return;
         }
-        var onGoingQueue = queue.slice();
+        const onGoingQueue = queue.slice();
         queue = [];
-        navigator.sendBeacon(
-            "/".concat(exports.window.__pan.routePrefix, "/events"),
-            new Blob(
-                [
-                    JSON.stringify({
-                        events: onGoingQueue,
-                        _token: exports.window.__pan.csrfToken,
-                    }),
-                ],
-                {
-                    type: "application/json",
-                }
-            )
-        );
+        navigator.sendBeacon(`/${exports.window.__pan.routePrefix}/events`, new Blob([
+            JSON.stringify({
+                events: onGoingQueue,
+                _token: exports.window.__pan.csrfToken,
+            }),
+        ], {
+            type: "application/json",
+        }));
     };
-    var queueCommit = function () {
+    const queueCommit = function () {
         queueTimeout && clearTimeout(queueTimeout);
         // @ts-ignore
         queueTimeout = setTimeout(commit, 1000);
     };
-    var send = function (el, event) {
-        var target = el.target;
-        var element = target.closest("[data-pan]");
+    const send = function (el, event) {
+        const target = el.target;
+        const element = target.closest("[data-pan]");
         if (element === null) {
             return;
         }
-        var name = element.getAttribute("data-pan");
+        const name = element.getAttribute("data-pan");
         if (name === null) {
             return;
         }
@@ -99,78 +94,70 @@ if (exports.window.__pan.inertiaStartListener) {
         });
         queueCommit();
     };
-    var detectImpressions = function () {
-        var elementsBeingImpressed = document.querySelectorAll("[data-pan]");
-        elementsBeingImpressed.forEach(function (element) {
-            if (
-                element.checkVisibility !== undefined &&
-                !element.checkVisibility()
-            ) {
+    const detectImpressions = function () {
+        const elementsBeingImpressed = document.querySelectorAll("[data-pan]");
+        elementsBeingImpressed.forEach((element) => {
+            if (element.checkVisibility !== undefined &&
+                !element.checkVisibility()) {
                 return;
             }
-            var name = element.getAttribute("data-pan");
+            const name = element.getAttribute("data-pan");
             if (name === null) {
                 return;
             }
-            if (impressed.includes(name)) {
-                return;
+            if (!impressed.includes(name)) {
+                impressed.push(name);
+                queue.push({
+                    type: "impression",
+                    name: name,
+                });
             }
-            impressed.push(name);
-            queue.push({
-                type: "impression",
-                name: name,
-            });
         });
         queueCommit();
     };
     domObserver(function () {
-        impressed.forEach(function (name) {
-            var element = document.querySelector(
-                "[data-pan='".concat(name, "']")
-            );
+        impressed.forEach((name) => {
+            var _a;
+            const element = document.querySelector(`[data-pan='${name}']`);
             if (element === null) {
-                impressed = impressed.filter(function (n) {
-                    return n !== name;
-                });
-                hovered = hovered.filter(function (n) {
-                    return n !== name;
-                });
-                clicked = clicked.filter(function (n) {
-                    return n !== name;
-                });
+                impressed = impressed.filter((n) => n !== name);
+                hovered = hovered.filter((n) => n !== name);
+                clicked = clicked.filter((n) => n !== name);
+            }
+            else {
+                (_a = exports.window.__pan.intersectionObserver) === null || _a === void 0 ? void 0 : _a.observe(element);
             }
         });
         detectImpressions();
     });
-    exports.window.__pan.clickListener = function (event) {
-        return send(event, "click");
-    };
+    intersectionObserver(function (entries) {
+        entries.forEach((entry) => {
+            const name = entry.target.getAttribute("data-pan");
+            if (!name || !entry.isIntersecting || visible.includes(name))
+                return;
+            visible.push(name);
+            queue.push({
+                type: "visible",
+                name: name,
+            });
+        });
+    });
+    exports.window.__pan.clickListener = (event) => send(event, "click");
     document.addEventListener("click", exports.window.__pan.clickListener);
-    exports.window.__pan.mouseoverListener = function (event) {
-        return send(event, "hover");
-    };
-    document.addEventListener(
-        "mouseover",
-        exports.window.__pan.mouseoverListener
-    );
-    exports.window.__pan.inertiaStartListener = function (event) {
+    exports.window.__pan.mouseoverListener = (event) => send(event, "hover");
+    document.addEventListener("mouseover", exports.window.__pan.mouseoverListener);
+    exports.window.__pan.inertiaStartListener = (event) => {
         impressed = [];
         hovered = [];
         clicked = [];
         detectImpressions();
     };
-    document.addEventListener(
-        "inertia:start",
-        exports.window.__pan.inertiaStartListener
-    );
+    document.addEventListener("inertia:start", exports.window.__pan.inertiaStartListener);
     exports.window.__pan.beforeUnloadListener = function (event) {
         if (queue.length === 0) {
             return;
         }
         commit();
     };
-    exports.window.addEventListener(
-        "beforeunload",
-        exports.window.__pan.beforeUnloadListener
-    );
+    exports.window.addEventListener("beforeunload", exports.window.__pan.beforeUnloadListener);
 })();

@@ -1,5 +1,5 @@
 {
-    "name": "panphp/pan",
+    "name": "eloquentarduino/panphp",
     "description": "A simple, lightweight, and privacy-focused product analytics php package.",
     "keywords": [
         "pan",
@@ -17,10 +17,14 @@
         {
             "name": "David Hill",
             "email": "david@laravel.com"
+        },
+        {
+            "name": "Simone Salerno",
+            "email": "info@salernosimone.com"
         }
     ],
     "require": {
-        "php": "^8.3.0"
+        "php": "^8.2.0"
     },
     "conflict": {
         "laravel/framework": "<11.0.0"

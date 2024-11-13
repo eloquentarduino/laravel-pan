@@ -24,6 +24,7 @@ final class AnalyticPresentor
             'impressions' => $this->toHumanReadableNumber($analytic->impressions),
             'hovers' => $this->toHumanReadableNumber($analytic->hovers).' ('.$this->toHumanReadablePercentage($analytic->impressions, $analytic->hovers).')',
             'clicks' => $this->toHumanReadableNumber($analytic->clicks).' ('.$this->toHumanReadablePercentage($analytic->impressions, $analytic->clicks).')',
+            'visibles' => $this->toHumanReadableNumber($analytic->visibles).' ('.$this->toHumanReadablePercentage($analytic->impressions, $analytic->visibles).')',
         ];
     }
 

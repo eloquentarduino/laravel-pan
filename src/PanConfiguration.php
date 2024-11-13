@@ -17,7 +17,7 @@ final class PanConfiguration
      * @param  array<int, string>  $allowedAnalytics
      */
     private function __construct(
-        private int $maxAnalytics = 50,
+        private int $maxAnalytics = 500,
         private array $allowedAnalytics = [],
         private string $routePrefix = 'pan',
     ) {
@@ -109,7 +109,7 @@ final class PanConfiguration
      */
     public static function reset(): void
     {
-        self::maxAnalytics(50);
+        self::maxAnalytics(500);
         self::allowedAnalytics([]);
         self::routePrefix('pan');
     }

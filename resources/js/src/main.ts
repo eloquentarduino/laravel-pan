@@ -13,6 +13,7 @@ window.__pan =
         clickListener: null,
         mouseoverListener: null,
         inertiaStartListener: null,
+        intersectionObserver: null,
     } as GlobalState);
 
 if (window.__pan.observer) {
@@ -55,11 +56,16 @@ if (window.__pan.inertiaStartListener) {
         window.__pan.observer = observer;
     };
 
+    const intersectionObserver = (callback: IntersectionObserverCallback): void => {
+        window.__pan.intersectionObserver = new IntersectionObserver(callback);
+    }
+
     let queue: Array<{ type: EventType; name: string }> = [];
     let queueTimeout: number | null = null;
     let impressed: Array<string> = [];
     let hovered: Array<string> = [];
     let clicked: Array<string> = [];
+    let visible: Array<string> = [];
 
     const commit = (): void => {
         if (queue.length === 0) {
@@ -148,16 +154,14 @@ if (window.__pan.inertiaStartListener) {
                 return;
             }
 
-            if (impressed.includes(name)) {
-                return;
+            if (!impressed.includes(name)) {
+                impressed.push(name);
+
+                queue.push({
+                    type: "impression",
+                    name: name,
+                });
             }
-
-            impressed.push(name);
-
-            queue.push({
-                type: "impression",
-                name: name,
-            });
         });
 
         queueCommit();
@@ -174,10 +178,29 @@ if (window.__pan.inertiaStartListener) {
                 hovered = hovered.filter((n: string): boolean => n !== name);
                 clicked = clicked.filter((n: string): boolean => n !== name);
             }
+            else {
+                window.__pan.intersectionObserver?.observe(element)
+            }
         });
 
         detectImpressions();
     });
+
+    intersectionObserver(function (entries: IntersectionObserverEntry[]): void {
+        entries.forEach((entry: IntersectionObserverEntry): void => {
+            const name = entry.target.getAttribute("data-pan");
+
+            if (!name || !entry.isIntersecting || visible.includes(name))
+                return;
+
+            visible.push(name);
+
+            queue.push({
+                type: "visible",
+                name: name,
+            });
+        })
+    })
 
     window.__pan.clickListener = (event: Event): void => send(event, "click");
     document.addEventListener("click", window.__pan.clickListener);

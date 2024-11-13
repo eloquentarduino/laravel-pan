@@ -20,6 +20,7 @@ final readonly class Analytic
         public int $impressions,
         public int $hovers,
         public int $clicks,
+        public int $visibles,
     ) {
         //
     }
